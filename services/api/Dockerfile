@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1.7
+
+# === Builder ===
+FROM python:3.13-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
+
+# Build deps for native wheels we don't always get prebuilt for slim.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv via the official installer (smaller than the full python image).
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+
+# === Runtime ===
+FROM python:3.13-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:${PATH}" \
+    PYTHONPATH="/app:/app/services/api/src"
+
+# Runtime system deps:
+#   - libreoffice (headless): used by shared.indexing for DOCX/XLSX -> PDF
+#   - poppler-utils & friends: PyMuPDF brings its own renderer but some
+#     edge formats benefit from the system tools.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libreoffice \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /app/.venv /app/.venv
+
+# Source layout: pyproject + workspace dirs.
+COPY pyproject.toml uv.lock ./
+COPY shared /app/shared
+COPY services/api /app/services/api
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl -fsS http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]
