@@ -47,9 +47,13 @@ Copy `.env.example` into Coolify's **Environment variables** UI for the
 project. At minimum you must set:
 
 ```
-OPENAI_API_KEY=sk-...
 OPENROUTER_API_KEY=sk-or-...
 ```
+
+DocuAI uses a single OpenRouter key for both the chat model (e.g.
+`openai/gpt-5-mini`) and the vision model used for page extraction
+(`qwen/qwen2.5-vl-72b-instruct`). Both go through OpenRouter's
+OpenAI-compatible endpoint.
 
 Recommended for production:
 

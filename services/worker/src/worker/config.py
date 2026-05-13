@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     opensearch_port: int = 9200
     opensearch_index: str = "documents"
 
-    # Vision-LLM ingestion
+    # Vision-LLM ingestion via OpenRouter
     openrouter_api_key: str = ""
-    openrouter_model: str = "qwen/qwen2.5-vl-72b-instruct"
+    openrouter_vlm_model: str = "qwen/qwen2.5-vl-72b-instruct"
 
     # Concurrency cap (matches dramatiq actor `max_concurrency`)
     max_concurrency: int = 2

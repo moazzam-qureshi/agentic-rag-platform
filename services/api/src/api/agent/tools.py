@@ -3,8 +3,8 @@
 from typing import Any
 
 import structlog
-from langchain.chat_models import init_chat_model
 from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 
 from api.config import settings
 from api.db.opensearch_store import get_page_store
@@ -33,10 +33,12 @@ def translate_query(
     Returns:
         Dict with the original and translated text plus detected language.
     """
-    model = init_chat_model(
-        model=settings.openai_model,
+    model = ChatOpenAI(
+        model=settings.openrouter_chat_model,
         temperature=0,
-        api_key=settings.openai_api_key,
+        api_key=settings.openrouter_api_key,
+        base_url=settings.openrouter_base_url,
+        max_tokens=settings.llm_max_tokens_default,
     )
 
     messages = [

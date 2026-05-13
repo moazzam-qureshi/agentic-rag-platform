@@ -25,11 +25,16 @@ def clear_agent_cache() -> None:
 
 
 def _create_llm() -> ChatOpenAI:
-    logger.info("creating_llm", model=settings.openai_model)
+    logger.info(
+        "creating_llm",
+        model=settings.openrouter_chat_model,
+        base_url=settings.openrouter_base_url,
+    )
     return ChatOpenAI(
-        model=settings.openai_model,
+        model=settings.openrouter_chat_model,
         temperature=0,
-        api_key=settings.openai_api_key,
+        api_key=settings.openrouter_api_key,
+        base_url=settings.openrouter_base_url,
         streaming=True,
         max_tokens=settings.llm_max_tokens_default,
     )
@@ -42,7 +47,7 @@ def get_agent():
     if _agent is not None:
         return _agent
 
-    logger.info("creating_rag_agent", model=settings.openai_model)
+    logger.info("creating_rag_agent", model=settings.openrouter_chat_model)
 
     tools = [translate_query, search]
 
@@ -54,7 +59,7 @@ def get_agent():
 
     logger.info(
         "rag_agent_created",
-        model=settings.openai_model,
+        model=settings.openrouter_chat_model,
         tools=[t.name for t in tools],
     )
 

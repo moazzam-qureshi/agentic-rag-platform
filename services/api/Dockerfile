@@ -44,7 +44,8 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 
 # Source layout: pyproject + workspace dirs.
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock alembic.ini ./
+COPY alembic /app/alembic
 COPY shared /app/shared
 COPY services/api /app/services/api
 

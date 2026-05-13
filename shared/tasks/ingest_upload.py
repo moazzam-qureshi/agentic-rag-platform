@@ -110,7 +110,7 @@ def ingest_uploaded_document(
 
             indexer = PageLevelIndexer(
                 openrouter_api_key=wsettings.openrouter_api_key,
-                openrouter_model=wsettings.openrouter_model,
+                openrouter_model=wsettings.openrouter_vlm_model,
             )
 
             db.add(

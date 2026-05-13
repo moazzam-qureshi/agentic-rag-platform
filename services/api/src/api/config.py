@@ -41,13 +41,17 @@ class Settings(BaseSettings):
     opensearch_index: str = "documents"
 
     # === LLMs ===
-    # OpenAI for chat/translation
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"
-
-    # OpenRouter for vision-LLM page extraction
+    # Single OpenRouter key for everything. OpenRouter is an OpenAI-compatible
+    # endpoint, so the langchain_openai client just needs base_url set.
     openrouter_api_key: str = ""
-    openrouter_model: str = "qwen/qwen2.5-vl-72b-instruct"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
+    # Chat / translation model — OpenAI's models are routed via OpenRouter.
+    openrouter_chat_model: str = "openai/gpt-5-mini"
+
+    # Vision-LLM for page extraction (separate setting because the worker
+    # uses it directly via the PageLevelParser, not through langchain).
+    openrouter_vlm_model: str = "qwen/qwen2.5-vl-72b-instruct"
 
     # === Guardrails ===
     # Trusted reverse-proxy networks (Coolify/Traefik). Comma-separated CIDRs.

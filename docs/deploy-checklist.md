@@ -31,11 +31,11 @@ OPENSEARCH_HOST=opensearch
 OPENSEARCH_PORT=9200
 OPENSEARCH_INDEX=documents
 
-# LLMs — required
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
+# LLMs — single OpenRouter key for everything
 OPENROUTER_API_KEY=sk-or-...
-OPENROUTER_MODEL=qwen/qwen2.5-vl-72b-instruct
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_CHAT_MODEL=openai/gpt-5-mini
+OPENROUTER_VLM_MODEL=qwen/qwen2.5-vl-72b-instruct
 
 # Guardrails — tune to taste
 TRUSTED_PROXIES=127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
@@ -136,7 +136,7 @@ The most common first-deploy issues:
 | `migrate` fails with `Connection refused` | postgres not healthy yet; just redeploy, depends_on/healthcheck handles it on retry |
 | OpenSearch OOM-killed | Bump VPS RAM or drop heap to `-Xms512m -Xmx512m` |
 | Upload returns 403 | Turnstile secret missing or invalid |
-| Chat returns nothing | Check OPENAI_API_KEY has credit |
+| Chat returns nothing | Check OPENROUTER_API_KEY has credit |
 | Upload succeeds but never indexes | Check OPENROUTER_API_KEY |
 
 ## 6 · Post-deploy
