@@ -99,7 +99,7 @@ class PageIndexingResult:
 class PageLevelIndexer:
     """Page-level document indexer over OpenSearch."""
 
-    SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".xlsx", ".xls"}
+    SUPPORTED_EXTENSIONS = {".pdf"}
 
     def __init__(
         self,

@@ -31,12 +31,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:${PATH}" \
     PYTHONPATH="/app:/app/services/api/src"
 
-# Runtime system deps:
-#   - libreoffice (headless): used by shared.indexing for DOCX/XLSX -> PDF
-#   - poppler-utils & friends: PyMuPDF brings its own renderer but some
-#     edge formats benefit from the system tools.
+# Runtime system deps: just curl for the healthcheck. PyMuPDF ships its
+# own renderer; PDF rendering needs nothing else from apt.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libreoffice \
         curl \
     && rm -rf /var/lib/apt/lists/*
 

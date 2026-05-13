@@ -25,7 +25,7 @@ No signup. Upload a document and ask a question in 10 seconds.
 
 DocuAI is a multi-tenant, agentic RAG system I built end-to-end:
 
-- **Upload any document** (PDF, DOCX, XLSX). DocuAI renders every page as
+- **Upload any PDF.** DocuAI renders every page as
   an image and uses a vision LLM (Qwen 2.5 VL via OpenRouter) to extract a
   retrieval summary plus exhaustive verbatim markdown — no chunking, no
   lost tables.

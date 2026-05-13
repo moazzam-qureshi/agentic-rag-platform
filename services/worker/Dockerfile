@@ -31,9 +31,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     # so both api and worker source trees must be on PYTHONPATH.
     PYTHONPATH="/app:/app/services/api/src:/app/services/worker/src"
 
-# LibreOffice is required for DOCX/XLSX -> PDF before VLM page rendering.
+# Runtime system deps: just curl. PyMuPDF handles PDF rendering itself.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libreoffice \
         curl \
     && rm -rf /var/lib/apt/lists/*
 

@@ -13,9 +13,9 @@
 
 ---
 
-DocuAI is an open-source agentic RAG system. Upload a PDF, DOCX, or
-spreadsheet and ask questions grounded in the actual content of your
-documents — with verbatim citations and a live retrieval trace.
+DocuAI is an open-source agentic RAG system. Upload a PDF and ask questions
+grounded in the actual content of your document — with verbatim citations
+and a live retrieval trace.
 
 What makes it different from a typical "chat with PDF" demo:
 

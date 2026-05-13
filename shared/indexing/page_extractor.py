@@ -1,9 +1,7 @@
-"""Page image extraction from various document types.
+"""Page image extraction for PDF documents.
 
-Normalizes documents to page images for VLM processing:
-- PDF: Render directly with PyMuPDF
-- DOCX/XLSX: Convert to PDF first via LibreOffice, then render
-- Images: Treat as single-page document
+Normalizes PDFs to page images for VLM processing via PyMuPDF.
+Images are also accepted as single-page documents.
 """
 
 import base64
@@ -14,12 +12,9 @@ from pathlib import Path
 import fitz  # PyMuPDF
 import structlog
 
-from .docx_converter import convert_office_to_pdf
-
 logger = structlog.get_logger(__name__)
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".xlsx", ".xls"}
-OFFICE_EXTENSIONS = {".docx", ".doc", ".xlsx", ".xls"}
+SUPPORTED_EXTENSIONS = {".pdf"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"}
 
 
@@ -69,25 +64,6 @@ def extract_pages_as_images(
     try:
         if suffix in IMAGE_EXTENSIONS:
             yield from _extract_from_image(working_path, image_format)
-            return
-
-        if suffix in OFFICE_EXTENSIONS:
-            logger.info("converting_office_to_pdf", suffix=suffix)
-            pdf_content = convert_office_to_pdf(working_path.read_bytes(), suffix=suffix)
-
-            if pdf_content is None:
-                raise ValueError(
-                    f"Failed to convert {suffix} to PDF. Ensure LibreOffice is installed."
-                )
-
-            pdf_temp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-            pdf_temp.write(pdf_content)
-            pdf_temp.close()
-
-            try:
-                yield from _extract_from_pdf(Path(pdf_temp.name), dpi, image_format)
-            finally:
-                Path(pdf_temp.name).unlink(missing_ok=True)
             return
 
         if suffix == ".pdf":
@@ -194,23 +170,6 @@ def get_page_count(
     try:
         if suffix in IMAGE_EXTENSIONS:
             return 1
-
-        if suffix in OFFICE_EXTENSIONS:
-            pdf_content = convert_office_to_pdf(working_path.read_bytes(), suffix=suffix)
-            if pdf_content is None:
-                return 0
-
-            pdf_temp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-            pdf_temp.write(pdf_content)
-            pdf_temp.close()
-
-            try:
-                doc = fitz.open(pdf_temp.name)
-                count = len(doc)
-                doc.close()
-                return count
-            finally:
-                Path(pdf_temp.name).unlink(missing_ok=True)
 
         if suffix == ".pdf":
             doc = fitz.open(working_path)

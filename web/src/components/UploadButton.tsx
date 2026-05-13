@@ -10,7 +10,7 @@ interface UploadButtonProps {
   onUploaded: () => void;
 }
 
-const ACCEPT = ".pdf,.docx,.doc,.xlsx,.xls";
+const ACCEPT = ".pdf";
 
 export function UploadButton({ onUploaded }: UploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +71,7 @@ export function UploadButton({ onUploaded }: UploadButtonProps) {
         </div>
       ) : (
         <div className="px-1 text-[11.5px] text-fg-faint">
-          PDF, DOCX or XLSX · up to 20 pages
+          PDF · up to 20 pages
         </div>
       )}
     </div>

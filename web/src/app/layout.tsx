@@ -17,7 +17,7 @@ const lora = Lora({
 export const metadata: Metadata = {
   title: "DocuAI — Agentic RAG over your documents",
   description:
-    "Upload your PDFs, DOCX, or spreadsheets and ask questions. Vision-LLM page extraction, hybrid search, cited answers.",
+    "Upload your PDFs and ask questions. Vision-LLM page extraction, hybrid search, cited answers.",
 };
 
 export default function RootLayout({

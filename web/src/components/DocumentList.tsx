@@ -37,7 +37,7 @@ export function DocumentList({ docs, loading, onDelete }: DocumentListProps) {
           No documents yet
         </div>
         <div className="text-fg-faint">
-          Upload a PDF, DOCX, or spreadsheet to get started.
+          Upload a PDF to get started.
         </div>
       </div>
     );

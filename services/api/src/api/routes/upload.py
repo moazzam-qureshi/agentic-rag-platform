@@ -47,7 +47,7 @@ async def upload_document(
 
     Guardrails applied in order:
     1. Turnstile (Cloudflare) token verification.
-    2. File-type whitelist (PDF, DOCX, DOC, XLSX, XLS).
+    2. File-type whitelist (PDF only).
     3. Per-IP daily upload count ceiling.
     4. Page-count ceiling per doc.
     5. Per-IP daily VLM-page cost ceiling.

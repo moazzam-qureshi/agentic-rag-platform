@@ -22,9 +22,9 @@ export function ChatPanel() {
               Ask anything about your documents.
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-fg-muted">
-              Upload a PDF, DOCX, or spreadsheet on the left. DocuAI reads
-              every page with a vision model, builds a hybrid search index,
-              and answers your questions with exact citations.
+              Upload a PDF on the left. DocuAI reads every page with a vision
+              model, builds a hybrid search index, and answers your questions
+              with exact citations.
             </p>
           </div>
         </header>

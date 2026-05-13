@@ -16,7 +16,7 @@ Accept a document upload, validate it, and enqueue async VLM ingestion.
 **Form fields**
 | field | type | required | notes |
 |-------|------|----------|-------|
-| `file` | binary | yes | PDF, DOCX, DOC, XLSX, or XLS |
+| `file` | binary | yes | PDF |
 | `turnstile_token` | string | when `TURNSTILE_SECRET` is set | Cloudflare Turnstile token |
 
 **Guardrails applied in order**
