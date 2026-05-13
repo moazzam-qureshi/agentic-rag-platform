@@ -10,9 +10,9 @@ Pipeline per page:
 """
 
 import os
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator
 
 import instructor
 import structlog

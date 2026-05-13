@@ -16,8 +16,8 @@ The siteverify endpoint is documented at:
 https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
 """
 
-import structlog
 import httpx
+import structlog
 
 logger = structlog.get_logger(__name__)
 

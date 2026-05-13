@@ -28,12 +28,11 @@ def cleanup_expired_documents() -> dict:
     Idempotent: safe to run repeatedly. Returns counts for observability.
     """
     # Late imports: worker-side modules.
-    from worker.db.session import get_db_session
-
     # Import the OpenSearch store from the api package — both run-times
     # have it on PYTHONPATH (we install the api source into the worker image
     # too, see services/worker/Dockerfile).
     from api.db.opensearch_store import get_page_store
+    from worker.db.session import get_db_session
 
     now = datetime.now(UTC)
     pages_deleted_total = 0

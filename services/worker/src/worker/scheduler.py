@@ -4,6 +4,8 @@ This is a separate container from the worker. It does no heavy work itself;
 it just calls `cleanup_expired_documents.send()` once an hour.
 """
 
+# ruff: noqa: I001, E402  — broker must be imported before actor imports.
+
 import logging
 import signal
 import sys
@@ -14,7 +16,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 # Broker first, then actor import so .send() routes to the right Redis.
 from worker import broker  # noqa: F401
-from shared.tasks import cleanup_expired_documents  # noqa: E402
+from shared.tasks import cleanup_expired_documents
 
 logging.basicConfig(stream=sys.stdout, format="%(message)s", level=logging.INFO)
 structlog.configure(

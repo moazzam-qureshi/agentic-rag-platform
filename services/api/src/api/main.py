@@ -7,6 +7,9 @@ Wiring order matters:
 4. Register routes.
 """
 
+# ruff: noqa: I001  — `from api import broker` must precede route imports
+# that transitively pull in shared.tasks actor decorations.
+
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +18,6 @@ from slowapi.errors import RateLimitExceeded
 # IMPORTANT: import broker first so dramatiq.set_broker runs before any
 # `@dramatiq.actor` decorators are evaluated via `shared.tasks` imports.
 from api import broker  # noqa: F401
-
 from api.config import settings
 from api.routes import chat, documents, health, jobs, upload
 from shared.guardrails.proxy import TrustedProxyMiddleware

@@ -3,7 +3,6 @@
 import base64
 import os
 from datetime import UTC, datetime, timedelta
-from io import BytesIO
 
 import structlog
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -17,7 +16,6 @@ from shared.guardrails.client_ip import get_client_ip
 from shared.guardrails.cost_ceiling import consume_cost_units, cost_remaining
 from shared.guardrails.turnstile import verify_turnstile_token
 from shared.indexing.page_extractor import (
-    OFFICE_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
     get_page_count,
 )
@@ -78,7 +76,7 @@ async def upload_document(
         raise HTTPException(
             status_code=415,
             detail=f"Unsupported file type: {suffix}. "
-                   f"Allowed: {', '.join(sorted(SUPPORTED_EXTENSIONS))}",
+            f"Allowed: {', '.join(sorted(SUPPORTED_EXTENSIONS))}",
         )
 
     content = await file.read()
@@ -135,9 +133,7 @@ async def upload_document(
 
     # 5. Per-IP daily VLM-page cost ceiling
     # Each page costs roughly the same in VLM tokens; we use pages as the unit.
-    max_pages_per_day = (
-        settings.upload_max_per_ip_per_day * settings.upload_max_pages_per_doc
-    )
+    max_pages_per_day = settings.upload_max_per_ip_per_day * settings.upload_max_pages_per_doc
     accepted = consume_cost_units(
         redis,
         ip=client_ip,
@@ -148,10 +144,7 @@ async def upload_document(
     if not accepted:
         raise HTTPException(
             status_code=429,
-            detail=(
-                "You've hit the daily VLM page-processing limit. "
-                "Try again tomorrow."
-            ),
+            detail=("You've hit the daily VLM page-processing limit. Try again tomorrow."),
         )
 
     # All guardrails passed — also bump the upload count ceiling.

@@ -1,0 +1,127 @@
+# DocuAI production compose — deployed on Coolify.
+#
+# Coolify handles:
+#   - Domain routing + SSL (set "DocuAI" service to expose port 3000)
+#   - Traefik labels (added by Coolify, not here)
+#   - Persistent volume management (the volumes below are Coolify-tracked)
+#
+# Environment variables come from .env (see .env.example for the full list).
+
+services:
+  # === Frontend ===
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+        NEXT_PUBLIC_TURNSTILE_SITEKEY: ${NEXT_PUBLIC_TURNSTILE_SITEKEY:-}
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # === API (FastAPI + LangGraph agent) ===
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # === Worker (Dramatiq — VLM ingestion) ===
+  worker:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    env_file: .env
+    command: ["dramatiq", "worker.main", "--processes", "1", "--threads", "2"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # === Scheduler (APScheduler — enqueues hourly cleanup) ===
+  scheduler:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    env_file: .env
+    command: ["python", "-m", "worker.scheduler"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # === Persistence ===
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: docuai
+      POSTGRES_PASSWORD: docuai
+      POSTGRES_DB: docuai
+    volumes:
+      - docuai_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuai"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - docuai_os_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # === Migrations (runs once on each deploy) ===
+  migrate:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    env_file: .env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  docuai_pg_data:
+  docuai_os_data:

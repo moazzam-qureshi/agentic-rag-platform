@@ -5,8 +5,8 @@ though the API service runs async. The two share the same DATABASE_URL —
 this module strips the asyncpg scheme.
 """
 
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker

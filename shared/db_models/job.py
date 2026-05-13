@@ -1,7 +1,7 @@
 """SyncJob — tracks a background processing job (worker-driven)."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import DateTime, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from shared.db_models.base import Base, TimestampMixin, UUIDMixin
 
 
-class JobType(str, Enum):
+class JobType(StrEnum):
     """Type of background job."""
 
     DOCUMENT_PROCESS = "document_process"
@@ -18,7 +18,7 @@ class JobType(str, Enum):
     EXPIRY_CLEANUP = "expiry_cleanup"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """Lifecycle status of a job."""
 
     PENDING = "pending"

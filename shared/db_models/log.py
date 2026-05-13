@@ -1,6 +1,6 @@
 """ProcessingLog — append-only log of events during document processing."""
 
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Text
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from shared.db_models.document import Document
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Severity of a processing event."""
 
     DEBUG = "debug"

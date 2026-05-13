@@ -85,11 +85,7 @@ class PostgresMemory:
         if client_ip is not None:
             values["client_ip"] = client_ip
 
-        stmt = (
-            insert(ChatSession)
-            .values(**values)
-            .on_conflict_do_nothing(index_elements=["id"])
-        )
+        stmt = insert(ChatSession).values(**values).on_conflict_do_nothing(index_elements=["id"])
         await self.db.execute(stmt)
         await self.db.flush()
 

@@ -111,9 +111,7 @@ class PageSearchStore:
         if filters:
             filter_clause = self._build_filter_clause(filters)
             if filter_clause:
-                search_body["query"]["hybrid"]["filter"] = {
-                    "bool": {"filter": filter_clause}
-                }
+                search_body["query"]["hybrid"]["filter"] = {"bool": {"filter": filter_clause}}
 
         try:
             response = client.search(

@@ -152,9 +152,7 @@ class PageLevelIndexer:
         pipeline_id = "page-hybrid-search-pipeline"
 
         try:
-            self._client.transport.perform_request(
-                "GET", f"/_search/pipeline/{pipeline_id}"
-            )
+            self._client.transport.perform_request("GET", f"/_search/pipeline/{pipeline_id}")
             logger.info("page_search_pipeline_exists", pipeline_id=pipeline_id)
         except NotFoundError:
             pipeline_body = {
@@ -292,9 +290,7 @@ class PageLevelIndexer:
             )
 
         except Exception as e:
-            logger.error(
-                "page_level_indexing_failed", document_id=document_id, error=str(e)
-            )
+            logger.error("page_level_indexing_failed", document_id=document_id, error=str(e))
             return PageIndexingResult(
                 document_id=document_id,
                 filename=filename,

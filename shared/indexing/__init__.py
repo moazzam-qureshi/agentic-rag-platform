@@ -1,20 +1,20 @@
 """Page-level document indexing pipeline with hybrid search (BM25 + kNN)."""
 
 from shared.indexing.page_extractor import (
+    SUPPORTED_EXTENSIONS,
     PageImage,
     extract_pages_as_images,
     get_page_count,
-    SUPPORTED_EXTENSIONS,
 )
 from shared.indexing.page_parser import (
-    PageLevelParser,
-    PageParseResult,
     DocumentPageResult,
     PageContent,
+    PageLevelParser,
+    PageParseResult,
 )
 from shared.indexing.pipeline import (
-    PageLevelIndexer,
     PageIndexingResult,
+    PageLevelIndexer,
     get_page_indexer,
 )
 

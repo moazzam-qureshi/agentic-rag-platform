@@ -61,8 +61,10 @@ def convert_office_to_pdf(content: bytes, suffix: str = ".docx") -> bytes | None
                 [
                     libreoffice_cmd,
                     "--headless",
-                    "--convert-to", "pdf",
-                    "--outdir", str(tmpdir_path),
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(tmpdir_path),
                     str(input_path),
                 ],
                 capture_output=True,

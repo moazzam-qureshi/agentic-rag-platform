@@ -1,0 +1,44 @@
+# Root .dockerignore — applies when building api/worker images from project root.
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+.ruff_cache
+.mypy_cache
+.pytest_cache
+*.egg-info
+
+# Frontend (api/worker images don't need it)
+web/node_modules
+web/.next
+web/out
+web/.eslintcache
+
+# Local-only
+.env
+.env.local
+*.log
+logs/
+.coolify/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# IDE
+.vscode
+.idea
+
+# Dev infra
+docker-compose.dev.yml
+
+# Docs
+*.md
+!README.md

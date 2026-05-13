@@ -6,6 +6,8 @@ Order matters:
 2. shared.tasks imports the actor modules, which register against the broker.
 """
 
+# ruff: noqa: I001, E402  — import order is intentional, see docstring.
+
 import logging
 import sys
 
@@ -15,7 +17,7 @@ import structlog
 from worker import broker  # noqa: F401
 
 # 2. Import actors — this registers them on the broker.
-from shared.tasks import (  # noqa: F401, E402
+from shared.tasks import (  # noqa: F401
     cleanup_expired_documents,
     ingest_uploaded_document,
 )

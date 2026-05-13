@@ -1,7 +1,7 @@
 """Document model — tracks an uploaded document through its lifecycle."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Index, Integer, String, Text
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from shared.db_models.log import ProcessingLog
 
 
-class DocumentStatus(str, Enum):
+class DocumentStatus(StrEnum):
     """Lifecycle status of an uploaded document."""
 
     PENDING = "pending"

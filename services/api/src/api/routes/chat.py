@@ -55,11 +55,7 @@ async def chat(
     await memory.add_message("user", payload.message)
 
     if not history:
-        title = (
-            payload.message[:100] + "..."
-            if len(payload.message) > 100
-            else payload.message
-        )
+        title = payload.message[:100] + "..." if len(payload.message) > 100 else payload.message
         await memory.update_session_title(title)
 
     await db.commit()
@@ -81,10 +77,15 @@ async def chat(
         pending_tool_calls: dict[str, dict] = {}
 
         try:
-            yield json.dumps({
-                "event": "session",
-                "data": {"session_id": session_id},
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "event": "session",
+                        "data": {"session_id": session_id},
+                    }
+                )
+                + "\n"
+            )
 
             agent = get_agent()
 
@@ -121,26 +122,35 @@ async def chat(
                             if isinstance(parsed, dict):
                                 for r in parsed.get("results", []) or []:
                                     if isinstance(r, dict) and "citation" in r:
-                                        citations.append({
-                                            "citation": r["citation"],
-                                            "summary": r.get("summary", ""),
-                                        })
+                                        citations.append(
+                                            {
+                                                "citation": r["citation"],
+                                                "summary": r.get("summary", ""),
+                                            }
+                                        )
 
-                            yield json.dumps({
-                                "event": "tool_result",
-                                "data": {
-                                    "tool": tool_name,
-                                    "result_count": (
-                                        parsed.get("result_count", 0)
-                                        if isinstance(parsed, dict) else 0
-                                    ),
-                                    "citations": citations[:10],
-                                    "documents_searched": (
-                                        parsed.get("documents_searched", [])
-                                        if isinstance(parsed, dict) else []
-                                    ),
-                                },
-                            }) + "\n"
+                            yield (
+                                json.dumps(
+                                    {
+                                        "event": "tool_result",
+                                        "data": {
+                                            "tool": tool_name,
+                                            "result_count": (
+                                                parsed.get("result_count", 0)
+                                                if isinstance(parsed, dict)
+                                                else 0
+                                            ),
+                                            "citations": citations[:10],
+                                            "documents_searched": (
+                                                parsed.get("documents_searched", [])
+                                                if isinstance(parsed, dict)
+                                                else []
+                                            ),
+                                        },
+                                    }
+                                )
+                                + "\n"
+                            )
                     continue
 
                 # stream_mode == "messages"
@@ -156,10 +166,15 @@ async def chat(
                 if tool_call_chunks:
                     if not is_searching:
                         is_searching = True
-                        yield json.dumps({
-                            "event": "status",
-                            "data": {"status": "searching"},
-                        }) + "\n"
+                        yield (
+                            json.dumps(
+                                {
+                                    "event": "status",
+                                    "data": {"status": "searching"},
+                                }
+                            )
+                            + "\n"
+                        )
 
                     for chunk in tool_call_chunks:
                         idx = chunk.get("index")
@@ -178,41 +193,57 @@ async def chat(
                         # args may keep streaming but the UI just needs the name.
                         if entry["name"] and not entry.get("emitted"):
                             entry["emitted"] = True
-                            yield json.dumps({
-                                "event": "tool_call",
-                                "data": {"tool": entry["name"]},
-                            }) + "\n"
+                            yield (
+                                json.dumps(
+                                    {
+                                        "event": "tool_call",
+                                        "data": {"tool": entry["name"]},
+                                    }
+                                )
+                                + "\n"
+                            )
                     continue
 
                 # Actual assistant text — stream it.
                 text_content = None
                 if hasattr(token, "text") and token.text:
                     text_content = token.text
-                elif (
-                    hasattr(token, "content")
-                    and isinstance(token.content, str)
-                    and token.content
-                ):
+                elif hasattr(token, "content") and isinstance(token.content, str) and token.content:
                     text_content = token.content
 
                 if text_content:
                     if not has_started_response and is_searching:
-                        yield json.dumps({
-                            "event": "status",
-                            "data": {"status": "generating"},
-                        }) + "\n"
+                        yield (
+                            json.dumps(
+                                {
+                                    "event": "status",
+                                    "data": {"status": "generating"},
+                                }
+                            )
+                            + "\n"
+                        )
                         has_started_response = True
 
                     full_response += text_content
-                    yield json.dumps({
-                        "event": "messages",
-                        "data": {"content": text_content},
-                    }) + "\n"
+                    yield (
+                        json.dumps(
+                            {
+                                "event": "messages",
+                                "data": {"content": text_content},
+                            }
+                        )
+                        + "\n"
+                    )
 
-            yield json.dumps({
-                "event": "done",
-                "data": {},
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "event": "done",
+                        "data": {},
+                    }
+                )
+                + "\n"
+            )
 
             logger.info(
                 "chat_response_complete",
@@ -227,10 +258,15 @@ async def chat(
                 error=str(e),
                 exc_info=True,
             )
-            yield json.dumps({
-                "event": "error",
-                "data": {"error": str(e)},
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "event": "error",
+                        "data": {"error": str(e)},
+                    }
+                )
+                + "\n"
+            )
 
         # Persist the assistant message after streaming, in a fresh session
         # (the Depends() session lifecycle has already ended by here).

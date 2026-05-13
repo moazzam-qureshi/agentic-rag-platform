@@ -1,0 +1,52 @@
+# syntax=docker/dockerfile:1.7
+
+# === Deps ===
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+
+# === Builder ===
+FROM node:22-alpine AS builder
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build-time env vars (NEXT_PUBLIC_* get baked into the client bundle).
+ARG NEXT_PUBLIC_API_BASE_URL=""
+ARG NEXT_PUBLIC_TURNSTILE_SITEKEY=""
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_TURNSTILE_SITEKEY=$NEXT_PUBLIC_TURNSTILE_SITEKEY
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+
+# === Runtime ===
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Non-root runtime user
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+# Minimal Next.js standalone bundle:
+#   - .next/standalone   self-contained server.js + node_modules subset
+#   - .next/static       built static assets
+#   - public/            user-provided static assets
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget -q --spider http://localhost:3000/ || exit 1
+
+CMD ["node", "server.js"]
