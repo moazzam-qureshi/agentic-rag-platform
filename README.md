@@ -4,7 +4,6 @@
 
 **Agentic RAG over your documents — vision-LLM page extraction, hybrid search, cited answers.**
 
-[![CI](https://github.com/moazzam-qureshi/agentic-rag-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/moazzam-qureshi/agentic-rag-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [Try the demo →](https://docuai.yourdomain.com) · [Architecture](docs/architecture.md) · [API reference](docs/api.md) · [Deploy guide](docs/deploy.md)
