@@ -21,7 +21,12 @@ interface TurnstileGlobal {
       callback: (token: string) => void;
       "error-callback"?: () => void;
       "expired-callback"?: () => void;
-      size?: "normal" | "compact" | "invisible";
+      // "invisible" was removed from Cloudflare's Turnstile API. To get
+      // an effectively invisible widget you use a normal size + the
+      // "interaction-only" appearance, which renders nothing when
+      // Cloudflare's heuristics resolve the challenge silently.
+      size?: "normal" | "compact" | "flexible";
+      appearance?: "always" | "execute" | "interaction-only";
       execution?: "render" | "execute";
     },
   ) => string;
@@ -99,7 +104,11 @@ export async function getTurnstileToken(): Promise<string> {
 
     widgetId = window.turnstile!.render(container, {
       sitekey,
-      size: "invisible",
+      // "interaction-only" + execute renders zero pixels unless Cloudflare
+      // decides the user needs to actively pass a challenge. The container
+      // div positioned bottom-right will host the checkbox if/when that
+      // happens; otherwise it stays empty.
+      appearance: "interaction-only",
       execution: "execute",
       callback: (token: string) => resolve(token),
       "error-callback": () =>
