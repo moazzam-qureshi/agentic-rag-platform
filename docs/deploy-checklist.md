@@ -34,7 +34,7 @@ OPENSEARCH_INDEX=documents
 # LLMs — single OpenRouter key for everything
 OPENROUTER_API_KEY=sk-or-...
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_CHAT_MODEL=openai/gpt-5-mini
+OPENROUTER_CHAT_MODEL=openai/gpt-4o-mini
 OPENROUTER_VLM_MODEL=qwen/qwen2.5-vl-72b-instruct
 
 # Guardrails — tune to taste

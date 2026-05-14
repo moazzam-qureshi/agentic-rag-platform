@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # Chat / translation model — OpenAI's models are routed via OpenRouter.
-    openrouter_chat_model: str = "openai/gpt-5-mini"
+    openrouter_chat_model: str = "openai/gpt-4o-mini"
 
     # Vision-LLM for page extraction (separate setting because the worker
     # uses it directly via the PageLevelParser, not through langchain).
