@@ -19,6 +19,10 @@ dependencies = [
     # === Search ===
     "opensearch-py>=2.4.0",
     "sentence-transformers>=2.2.0",
+    # Pin torch explicitly so uv resolves it from the CPU-only index below.
+    # Default torch wheels on Linux pull ~2GB of CUDA libs we never use
+    # (sentence-transformers calls SentenceTransformer(device="cpu") only).
+    "torch>=2.4.0",
     # === Agent (LangGraph) ===
     "langchain>=1.2.0",
     "langchain-openai>=0.3.0",
@@ -45,6 +49,21 @@ dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.8.0",
+]
+
+# === uv-managed package sources ===
+# torch comes from PyTorch's CPU-only wheel index. Without this, the default
+# Linux wheels pull NVIDIA CUDA runtime (cudnn, nvjitlink, cusolver, …) for
+# ~2GB extra. We never use the GPU; sentence-transformers runs on CPU.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+    # On macOS/Windows let pip pick the default wheel (CPU by default there).
 ]
 
 [tool.ruff]
