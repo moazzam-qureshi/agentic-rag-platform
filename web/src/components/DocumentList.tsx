@@ -37,7 +37,7 @@ export function DocumentList({ docs, loading, onDelete }: DocumentListProps) {
           No documents yet
         </div>
         <div className="text-fg-faint">
-          Upload a PDF to get started.
+          Upload one or more PDFs — DocuAI searches across all of them.
         </div>
       </div>
     );

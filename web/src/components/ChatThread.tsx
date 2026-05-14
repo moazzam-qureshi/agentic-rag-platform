@@ -56,8 +56,9 @@ function EmptyState() {
         <span className="text-sm font-medium">Try asking</span>
       </div>
       <ul className="space-y-1 text-[14.5px] text-fg-muted">
-        <li>· What are the main topics covered in this document?</li>
-        <li>· Summarize section 3 in three sentences.</li>
+        <li>· Compare what these documents say about [topic].</li>
+        <li>· Which document discusses [term], and what does it say?</li>
+        <li>· Summarize the key points across everything I&rsquo;ve uploaded.</li>
         <li>· List every defined term and quote its definition verbatim.</li>
       </ul>
     </div>

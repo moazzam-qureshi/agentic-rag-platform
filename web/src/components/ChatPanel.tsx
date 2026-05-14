@@ -15,12 +15,13 @@ export function ChatPanel() {
         <header className="border-b border-border px-6 py-8">
           <div className="page-prose w-full">
             <h1 className="font-display text-3xl font-semibold tracking-tight text-fg">
-              Ask anything about your documents.
+              Ask anything across your documents.
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-fg-muted">
-              Upload a PDF on the left. DocuAI reads every page with a vision
-              model, builds a hybrid search index, and answers your questions
-              with exact citations.
+              Upload one PDF or many. DocuAI reads every page with a vision
+              model, builds a single hybrid search index across all of them,
+              and answers your questions with exact citations — even when the
+              evidence is spread across multiple files.
             </p>
           </div>
         </header>
@@ -34,8 +35,9 @@ export function ChatPanel() {
         <div className="page-prose w-full">
           <Composer onSend={send} busy={busy} />
           <p className="mt-2 px-1 text-[11.5px] text-fg-faint">
-            DocuAI grounds every answer in your uploaded documents. Press Enter
-            to send · Shift+Enter for a new line.
+            DocuAI searches across every document you&rsquo;ve uploaded and
+            cites the exact pages it pulled from. Press Enter to send ·
+            Shift+Enter for a new line.
           </p>
         </div>
       </div>
