@@ -19,6 +19,8 @@ services:
       NODE_ENV: production
     depends_on:
       - api
+    healthcheck:
+      disable: true
     restart: unless-stopped
 
   # === API (FastAPI + LangGraph agent) ===
@@ -34,6 +36,8 @@ services:
         condition: service_healthy
       opensearch:
         condition: service_healthy
+    healthcheck:
+      disable: true
     restart: unless-stopped
 
   # === Worker (Dramatiq — VLM ingestion) ===
