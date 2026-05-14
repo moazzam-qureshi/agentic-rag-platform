@@ -123,8 +123,12 @@ agentic-rag-platform/
 
 ## Production deploy
 
-DocuAI is one `git push` away from a deploy on [Coolify](https://coolify.io).
-See [docs/deploy.md](docs/deploy.md) for the full walkthrough.
+DocuAI is wired up for continuous deployment on [Coolify](https://coolify.io):
+every push to `main` triggers an automatic build and rollout. No manual
+deploy step — push, watch the Coolify build log, done.
+
+See [docs/deploy.md](docs/deploy.md) for first-time setup (Coolify project,
+env vars, domain, Turnstile keys).
 
 ## License
 
