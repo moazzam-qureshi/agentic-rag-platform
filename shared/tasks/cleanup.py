@@ -1,17 +1,22 @@
-"""Dramatiq actor that purges expired uploads (24h TTL).
+"""Dramatiq actor that purges expired demo data (24h TTL).
 
-Removes Document rows and their OpenSearch pages whose `expires_at` is in
-the past. Runs on a schedule via the `scheduler` service (APScheduler →
-enqueue → this actor).
+Two sweeps, both keyed off a 24-hour TTL:
+1. Documents whose `expires_at < now()` — remove their OpenSearch pages,
+   mark the row DELETED.
+2. ChatSessions older than 24h — hard-delete the session row, which
+   cascades to messages.
+
+Runs on a schedule via the `scheduler` service (APScheduler → enqueue
+→ this actor).
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import dramatiq
 import structlog
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
-from shared.db_models import Document, DocumentStatus
+from shared.db_models import ChatSession, Document, DocumentStatus
 
 logger = structlog.get_logger(__name__)
 
@@ -37,10 +42,12 @@ def cleanup_expired_documents() -> dict:
     now = datetime.now(UTC)
     pages_deleted_total = 0
     docs_marked_deleted = 0
+    sessions_deleted = 0
 
     store = get_page_store()
 
     with get_db_session() as db:
+        # === 1. Documents past their explicit expires_at ===
         stmt = (
             select(Document)
             .where(Document.expires_at.is_not(None))
@@ -66,13 +73,24 @@ def cleanup_expired_documents() -> dict:
 
         db.commit()
 
+        # === 2. Chat sessions older than 24h ===
+        # Hard-delete the session row; FK ON DELETE CASCADE on Message.session_id
+        # removes the conversation contents.
+        chat_cutoff = now - timedelta(hours=24)
+        del_stmt = delete(ChatSession).where(ChatSession.created_at < chat_cutoff)
+        del_result = db.execute(del_stmt)
+        sessions_deleted = del_result.rowcount or 0
+        db.commit()
+
     logger.info(
         "cleanup_complete",
         docs_marked_deleted=docs_marked_deleted,
         pages_deleted_total=pages_deleted_total,
+        sessions_deleted=sessions_deleted,
     )
 
     return {
         "docs_marked_deleted": docs_marked_deleted,
         "pages_deleted_total": pages_deleted_total,
+        "sessions_deleted": sessions_deleted,
     }

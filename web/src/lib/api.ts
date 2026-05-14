@@ -65,6 +65,20 @@ export interface JobStatusResponse {
   logs: ProcessingLogLine[];
 }
 
+export interface SessionMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
+export interface SessionResponse {
+  session_id: string;
+  title: string | null;
+  created_at: string;
+  messages: SessionMessage[];
+}
+
 export type ChatStreamEvent =
   | { event: "session"; data: { session_id: string } }
   | { event: "status"; data: { status: "searching" | "generating" } }
@@ -125,6 +139,21 @@ export async function getJobStatus(
   documentId: string,
 ): Promise<JobStatusResponse> {
   const res = await fetch(`${API_BASE}/jobs/${documentId}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(await safeError(res));
+  return res.json();
+}
+
+/**
+ * Load a chat session and its messages — used by the frontend to
+ * rehydrate a conversation after the user reloads the page.
+ *
+ * Throws on 404 (session unknown / belongs to a different IP); the
+ * caller should clear the persisted sessionId and start fresh.
+ */
+export async function getSession(sessionId: string): Promise<SessionResponse> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(await safeError(res));

@@ -19,7 +19,7 @@ from slowapi.errors import RateLimitExceeded
 # `@dramatiq.actor` decorators are evaluated via `shared.tasks` imports.
 from api import broker  # noqa: F401
 from api.config import settings
-from api.routes import chat, documents, health, jobs, upload
+from api.routes import chat, documents, health, jobs, sessions, upload
 from shared.guardrails.proxy import TrustedProxyMiddleware
 from shared.guardrails.rate_limit import build_limiter, rate_limit_exceeded_response
 
@@ -66,6 +66,7 @@ app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(documents.router)
 app.include_router(jobs.router)
+app.include_router(sessions.router)
 app.include_router(chat.router)
 
 

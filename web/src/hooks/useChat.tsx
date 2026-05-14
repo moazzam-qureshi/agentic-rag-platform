@@ -4,11 +4,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { streamChat, type ChatStreamEvent } from "@/lib/api";
+import { getSession, streamChat, type ChatStreamEvent } from "@/lib/api";
+
+const SESSION_STORAGE_KEY = "docuai.session_id";
 
 // ===== Types =====
 
@@ -46,12 +49,59 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 // ===== Provider =====
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionIdState] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [traces, setTraces] = useState<ToolCallTrace[]>([]);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Wrap setter so every sessionId update mirrors to localStorage. Pulled
+  // through to applyStreamEvent below via setters.setSessionId.
+  const setSessionId = useCallback((id: string | null) => {
+    setSessionIdState(id);
+    if (typeof window === "undefined") return;
+    if (id) {
+      window.localStorage.setItem(SESSION_STORAGE_KEY, id);
+    } else {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, []);
+
+  // Rehydrate from localStorage on mount: if there's a persisted sessionId,
+  // try to fetch its messages and restore the conversation. A 404 means
+  // the session was reaped (24h cleanup) or belongs to another IP — clear
+  // the stale id and start fresh.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!stored) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const session = await getSession(stored);
+        if (cancelled) return;
+        setSessionIdState(session.session_id);
+        setMessages(
+          session.messages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+          })),
+        );
+      } catch {
+        if (cancelled) return;
+        // Session expired / unknown / cross-IP — drop it and let the next
+        // send() create a fresh one.
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const send = useCallback(
     async (text: string) => {
