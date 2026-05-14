@@ -123,6 +123,48 @@ def ingest_uploaded_document(
             )
             db.commit()
 
+            # Progress callbacks: each opens its own short-lived DB session
+            # so writes are immediately visible to the API's /jobs polling.
+            # Capture loop variables explicitly to avoid late-binding issues.
+            doc_id_capture = doc.id
+            job_id_capture = job.id
+
+            def _on_total_pages(total: int) -> None:
+                try:
+                    with get_db_session() as cb_db:
+                        cb_db.add(
+                            ProcessingLog(
+                                document_id=doc_id_capture,
+                                job_id=job_id_capture,
+                                level=LogLevel.INFO,
+                                message=f"Detected {total} pages — starting page-by-page extraction",
+                                details={"total_pages": total},
+                            )
+                        )
+                        cb_db.commit()
+                except Exception as cb_e:
+                    logger.warning("on_total_pages_log_failed", error=str(cb_e))
+
+            def _on_page_done(page_number: int, total: int) -> None:
+                try:
+                    with get_db_session() as cb_db:
+                        cb_db.add(
+                            ProcessingLog(
+                                document_id=doc_id_capture,
+                                job_id=job_id_capture,
+                                level=LogLevel.INFO,
+                                message=f"Processed page {page_number} / {total}",
+                                details={"page_number": page_number, "total_pages": total},
+                            )
+                        )
+                        cb_db.commit()
+                except Exception as cb_e:
+                    logger.warning(
+                        "on_page_done_log_failed",
+                        page_number=page_number,
+                        error=str(cb_e),
+                    )
+
             # The indexer's API is async; run it inside a fresh loop for this
             # synchronous worker actor body.
             loop = asyncio.new_event_loop()
@@ -134,6 +176,8 @@ def ingest_uploaded_document(
                         filename=filename,
                         document_id=document_id,
                         delete_existing=True,
+                        on_total_pages=_on_total_pages,
+                        on_page_done=_on_page_done,
                     )
                 )
             finally:

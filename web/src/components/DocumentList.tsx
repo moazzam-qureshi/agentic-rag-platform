@@ -84,8 +84,18 @@ function DocItem({
           {doc.filename}
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">
-          <StatusBadge status={doc.status} pageCount={doc.page_count} />
+          <StatusBadge
+            status={doc.status}
+            pageCount={doc.page_count}
+            progress={doc.progress}
+          />
         </div>
+        {doc.status === "processing" && doc.progress?.total_pages ? (
+          <ProgressBar
+            done={doc.progress.pages_done}
+            total={doc.progress.total_pages}
+          />
+        ) : null}
         {doc.error_message ? (
           <div className="mt-1 truncate text-[11.5px] text-[var(--color-status-error)]">
             {doc.error_message}
@@ -139,14 +149,23 @@ function StatusIcon({ status }: { status: DocumentRecord["status"] }) {
 function StatusBadge({
   status,
   pageCount,
+  progress,
 }: {
   status: DocumentRecord["status"];
   pageCount: number;
+  progress?: DocumentRecord["progress"];
 }) {
   switch (status) {
     case "pending":
       return <Badge tone="neutral">queued</Badge>;
     case "processing":
+      if (progress?.total_pages) {
+        return (
+          <Badge tone="info">
+            indexing… {progress.pages_done} / {progress.total_pages}
+          </Badge>
+        );
+      }
       return <Badge tone="info">indexing…</Badge>;
     case "indexed":
       return (
@@ -161,4 +180,22 @@ function StatusBadge({
     default:
       return null;
   }
+}
+
+function ProgressBar({ done, total }: { done: number; total: number }) {
+  const pct = total === 0 ? 0 : Math.min(100, Math.round((done / total) * 100));
+  return (
+    <div
+      className="mt-1.5 h-[3px] w-full overflow-hidden rounded-full bg-[var(--color-border)]"
+      role="progressbar"
+      aria-valuenow={done}
+      aria-valuemin={0}
+      aria-valuemax={total}
+    >
+      <div
+        className="h-full bg-accent transition-[width] duration-200 ease-out"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
 }

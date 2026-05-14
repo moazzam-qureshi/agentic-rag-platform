@@ -55,6 +55,7 @@ export function useDocuments() {
               status: u.status,
               page_count: u.page_count,
               error_message: u.error_message,
+              progress: u.progress,
             };
           }),
         );

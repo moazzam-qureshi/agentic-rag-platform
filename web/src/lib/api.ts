@@ -18,6 +18,13 @@ export type DocumentStatus =
   | "failed"
   | "deleted";
 
+export interface IngestionProgress {
+  /** Pages whose VLM extraction has completed. */
+  pages_done: number;
+  /** Total pages detected in the document. 0 until the parser has opened it. */
+  total_pages: number;
+}
+
 export interface DocumentRecord {
   id: string;
   filename: string;
@@ -26,6 +33,9 @@ export interface DocumentRecord {
   created_at: string;
   expires_at: string | null;
   error_message: string | null;
+  /** Live ingestion progress merged in by the poller; absent on the
+   *  initial /documents fetch. */
+  progress?: IngestionProgress;
 }
 
 export interface UploadResponse {
@@ -39,6 +49,7 @@ export interface UploadResponse {
 export interface ProcessingLogLine {
   level: "debug" | "info" | "warning" | "error";
   message: string;
+  details: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -46,8 +57,11 @@ export interface JobStatusResponse {
   document_id: string;
   filename: string;
   status: DocumentStatus;
+  /** Final page count after indexing (0 while in progress). */
   page_count: number;
   error_message: string | null;
+  /** Live progress derived from worker callbacks. */
+  progress: IngestionProgress;
   logs: ProcessingLogLine[];
 }
 

@@ -10,7 +10,7 @@ Pipeline per page:
 """
 
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -19,7 +19,7 @@ import structlog
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from .page_extractor import SUPPORTED_EXTENSIONS, extract_pages_as_images
+from .page_extractor import SUPPORTED_EXTENSIONS, extract_pages_as_images, get_page_count
 
 logger = structlog.get_logger(__name__)
 
@@ -154,8 +154,15 @@ class PageLevelParser:
         self,
         content: bytes,
         filename: str,
+        on_total_pages: Callable[[int], None] | None = None,
+        on_page_done: Callable[[int, int], None] | None = None,
     ) -> Iterator[PageParseResult]:
-        """Parse a document and yield results page-by-page."""
+        """Parse a document and yield results page-by-page.
+
+        Optional callbacks let callers (e.g. the worker task) surface
+        progress to a database / UI without needing to know about the
+        generator's internals.
+        """
         suffix = Path(filename).suffix.lower()
 
         if suffix not in SUPPORTED_EXTENSIONS:
@@ -164,7 +171,22 @@ class PageLevelParser:
         if not self.api_key:
             raise ValueError("OpenRouter API key is required for page-level parsing")
 
-        logger.info("page_level_parsing_start", filename=filename, model=self.model)
+        # Determine total up front so callbacks can render "n / total" progress.
+        # get_page_count is cheap (just opens the PDF, no rendering).
+        total_pages = get_page_count(file_content=content, filename=filename)
+
+        logger.info(
+            "page_level_parsing_start",
+            filename=filename,
+            model=self.model,
+            total_pages=total_pages,
+        )
+
+        if on_total_pages is not None:
+            try:
+                on_total_pages(total_pages)
+            except Exception as cb_e:
+                logger.warning("on_total_pages_callback_failed", error=str(cb_e))
 
         for page_image in extract_pages_as_images(
             file_content=content,
@@ -174,6 +196,7 @@ class PageLevelParser:
             logger.info(
                 "processing_page",
                 page_number=page_image.page_number,
+                total_pages=total_pages,
                 dimensions=f"{page_image.width}x{page_image.height}",
             )
 
@@ -198,13 +221,36 @@ class PageLevelParser:
                     full_content=f"Error: {e!s}",
                 )
 
-    def parse(self, content: bytes, filename: str) -> DocumentPageResult:
+            if on_page_done is not None:
+                try:
+                    on_page_done(page_image.page_number, total_pages)
+                except Exception as cb_e:
+                    logger.warning(
+                        "on_page_done_callback_failed",
+                        page_number=page_image.page_number,
+                        error=str(cb_e),
+                    )
+
+    def parse(
+        self,
+        content: bytes,
+        filename: str,
+        on_total_pages: Callable[[int], None] | None = None,
+        on_page_done: Callable[[int, int], None] | None = None,
+    ) -> DocumentPageResult:
         """Parse a document and return all pages."""
         suffix = Path(filename).suffix.lower()
         file_type = suffix.lstrip(".")
 
         try:
-            pages = list(self.parse_pages(content, filename))
+            pages = list(
+                self.parse_pages(
+                    content,
+                    filename,
+                    on_total_pages=on_total_pages,
+                    on_page_done=on_page_done,
+                )
+            )
 
             logger.info(
                 "page_level_parsing_complete",

@@ -11,6 +11,7 @@ Embeddings: sentence-transformers/all-MiniLM-L6-v2 (384 dimensions).
 
 import hashlib
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -183,8 +184,15 @@ class PageLevelIndexer:
         filename: str,
         document_id: str | None = None,
         delete_existing: bool = True,
+        on_total_pages: Callable[[int], None] | None = None,
+        on_page_done: Callable[[int, int], None] | None = None,
     ) -> PageIndexingResult:
-        """Index a document page-by-page into OpenSearch."""
+        """Index a document page-by-page into OpenSearch.
+
+        Optional callbacks are forwarded to the parser so callers can
+        observe per-page progress (used by the worker to write
+        ProcessingLog rows the UI polls).
+        """
         document_id = document_id or str(uuid4())
         file_hash = self._compute_file_hash(content)
         file_ext = os.path.splitext(filename)[1].lower()
@@ -204,7 +212,12 @@ class PageLevelIndexer:
         )
 
         try:
-            result = self._parser.parse(content, filename)
+            result = self._parser.parse(
+                content,
+                filename,
+                on_total_pages=on_total_pages,
+                on_page_done=on_page_done,
+            )
 
             if not result.success:
                 raise ValueError(result.error or "Parsing failed")
