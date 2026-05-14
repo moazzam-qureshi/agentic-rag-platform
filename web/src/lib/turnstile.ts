@@ -10,6 +10,7 @@ const TURNSTILE_SRC =
   "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__turnstileOnLoad";
 
 let loadPromise: Promise<void> | null = null;
+let backdropEl: HTMLDivElement | null = null;
 let containerEl: HTMLDivElement | null = null;
 let widgetId: string | null = null;
 
@@ -19,8 +20,10 @@ interface TurnstileGlobal {
     opts: {
       sitekey: string;
       callback: (token: string) => void;
-      "error-callback"?: () => void;
+      "error-callback"?: (code?: string) => void;
       "expired-callback"?: () => void;
+      "before-interactive-callback"?: () => void;
+      "after-interactive-callback"?: () => void;
       // "invisible" was removed from Cloudflare's Turnstile API. To get
       // an effectively invisible widget you use a normal size + the
       // "interaction-only" appearance, which renders nothing when
@@ -67,15 +70,39 @@ function loadTurnstile(): Promise<void> {
 }
 
 function ensureContainer(): HTMLDivElement {
-  if (containerEl) return containerEl;
+  if (containerEl && backdropEl) return containerEl;
+
+  // Dimmed full-screen backdrop. Hidden by default — only shown while
+  // Cloudflare is actually displaying a visible challenge.
+  const backdrop = document.createElement("div");
+  backdrop.style.position = "fixed";
+  backdrop.style.inset = "0";
+  backdrop.style.background = "rgba(0, 0, 0, 0.45)";
+  backdrop.style.zIndex = "9998";
+  backdrop.style.display = "none";
+  backdrop.style.alignItems = "center";
+  backdrop.style.justifyContent = "center";
+
+  // Centered widget host. Reserve the standard 300×65 Turnstile widget
+  // footprint so the checkbox has room to render when a challenge fires.
   const el = document.createElement("div");
-  el.style.position = "fixed";
-  el.style.bottom = "16px";
-  el.style.right = "16px";
+  el.style.width = "300px";
+  el.style.height = "65px";
   el.style.zIndex = "9999";
-  document.body.appendChild(el);
+
+  backdrop.appendChild(el);
+  document.body.appendChild(backdrop);
+  backdropEl = backdrop;
   containerEl = el;
   return el;
+}
+
+function showBackdrop() {
+  if (backdropEl) backdropEl.style.display = "flex";
+}
+
+function hideBackdrop() {
+  if (backdropEl) backdropEl.style.display = "none";
 }
 
 /**
@@ -105,22 +132,37 @@ export async function getTurnstileToken(): Promise<string> {
     widgetId = window.turnstile!.render(container, {
       sitekey,
       // "interaction-only" + execute renders zero pixels unless Cloudflare
-      // decides the user needs to actively pass a challenge. The container
-      // div positioned bottom-right will host the checkbox if/when that
-      // happens; otherwise it stays empty.
+      // decides the user needs to actively pass a challenge. When a visible
+      // challenge IS required, `before-interactive-callback` fires and we
+      // reveal the modal backdrop so the centered checkbox is unmissable.
       appearance: "interaction-only",
       execution: "execute",
-      callback: (token: string) => resolve(token),
-      "error-callback": () =>
-        reject(new Error("Turnstile challenge failed")),
-      "expired-callback": () =>
-        reject(new Error("Turnstile token expired")),
+      callback: (token: string) => {
+        hideBackdrop();
+        resolve(token);
+      },
+      "error-callback": (code?: string) => {
+        hideBackdrop();
+        console.error("[turnstile] error-callback", code);
+        reject(new Error(`Turnstile challenge failed${code ? ` (${code})` : ""}`));
+      },
+      "expired-callback": () => {
+        hideBackdrop();
+        reject(new Error("Turnstile token expired"));
+      },
+      "before-interactive-callback": () => showBackdrop(),
+      "after-interactive-callback": () => hideBackdrop(),
     });
 
-    try {
-      window.turnstile!.execute(widgetId);
-    } catch (e) {
-      reject(e instanceof Error ? e : new Error(String(e)));
-    }
+    // Defer execute() one tick so the widget has finished mounting its
+    // iframe — calling it synchronously after render() occasionally
+    // no-ops on the first invocation.
+    setTimeout(() => {
+      try {
+        window.turnstile!.execute(widgetId!);
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error(String(e)));
+      }
+    }, 0);
   });
 }
