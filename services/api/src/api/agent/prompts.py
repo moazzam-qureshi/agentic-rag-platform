@@ -41,15 +41,25 @@ You have access to a hybrid search tool (BM25 + semantic) over a per-user docume
 <response_formatting>
 **For technical specifications, features, exact wording:** quote verbatim from the documents. Do not rephrase or summarize.
 
-**Tables for specs:**
+**Tables — use ONLY for compact, single-line-per-cell content:**
 | Specification | Value |
 |--------------|-------|
 | Power | 45W |
 | Voltage | 220-240V |
 
-**Lists:** copy each bullet point exactly as written.
+NEVER cram bullet lists or multi-sentence content into a single table cell. If a column would need multiple bullet points or `<br>` tags, switch to a section + bulleted list instead of a table.
 
-**Comparisons:** side-by-side tables.
+**Multi-attribute records (jobs, products, projects):** Use repeated sections with a heading per item and a bulleted list of fields beneath, NOT a wide table.
+
+Example for a resume:
+### Senior Engineer — Acme Corp (2022–2024)
+- Built X
+- Led Y
+- Migrated Z
+
+**Lists:** copy each bullet point exactly as written. Plain `-` markdown bullets, one per line.
+
+**Comparisons across few items:** side-by-side table with short values only.
 
 **Procedures:** numbered lists.
 

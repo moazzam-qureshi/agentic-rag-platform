@@ -3,8 +3,18 @@
 import { Search, Sparkles, Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
 import { useChat } from "@/hooks/useChat";
 import { cn } from "@/lib/cn";
+
+// Allow `<br>` inside table cells (LLMs emit these to multi-line a cell
+// without breaking the markdown table). Sanitizer otherwise strips them.
+const SANITIZE_SCHEMA = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames ?? []), "br"],
+};
 
 export function ChatThread() {
   const { messages, status, error } = useChat();
@@ -99,17 +109,40 @@ function MessageBubble({
         "[&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-5 [&_h2]:mb-2",
         "[&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2",
         "[&_strong]:font-semibold [&_strong]:text-fg",
-        "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5",
-        "[&_li]:my-0.5",
-        "[&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_table]:text-[14px]",
-        "[&_th]:border [&_th]:border-border-strong [&_th]:bg-bg-subtle [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-medium",
-        "[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-1.5",
-        "[&_code]:rounded [&_code]:bg-bg-subtle [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[13.5px] [&_code]:font-mono",
+        "[&_em]:italic",
+        "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ul]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-3",
+        "[&_li]:my-0.5 [&_li]:pl-0.5",
+        "[&_li>p]:my-0",
+        "[&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-3 [&_blockquote]:text-fg-muted [&_blockquote]:my-3",
+        // Table: scroll-wrap so wide cells don't blow out the column.
+        "[&_.md-table-wrap]:my-3 [&_.md-table-wrap]:overflow-x-auto",
+        "[&_.md-table-wrap]:rounded-md [&_.md-table-wrap]:border [&_.md-table-wrap]:border-border",
+        "[&_table]:w-full [&_table]:border-collapse [&_table]:text-[14px]",
+        "[&_th]:border-b [&_th]:border-border-strong [&_th]:bg-bg-subtle [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium [&_th]:align-top",
+        "[&_td]:border-b [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:align-top",
+        "[&_tr:last-child_td]:border-b-0",
+        "[&_pre]:my-3 [&_pre]:rounded-md [&_pre]:bg-bg-subtle [&_pre]:p-3 [&_pre]:overflow-x-auto [&_pre]:text-[13px]",
+        "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-bg-subtle [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[13.5px] [&_:not(pre)>code]:font-mono",
         "[&_a]:text-accent [&_a]:underline-offset-2 hover:[&_a]:underline",
+        "[&_hr]:my-4 [&_hr]:border-border",
       )}
     >
       {message.content ? (
-        <ReactMarkdown>{message.content}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw, [rehypeSanitize, SANITIZE_SCHEMA]]}
+          components={{
+            // Wrap each table in a horizontal-scroll container so wide
+            // tables don't push the chat column out of view.
+            table: ({ children, ...props }) => (
+              <div className="md-table-wrap">
+                <table {...props}>{children}</table>
+              </div>
+            ),
+          }}
+        >
+          {message.content}
+        </ReactMarkdown>
       ) : (
         <span className="text-fg-faint">…</span>
       )}
