@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/Badge";
 import { ChatThread } from "@/components/ChatThread";
 import { Composer } from "@/components/Composer";
 import { useChat } from "@/hooks/useChat";
@@ -15,9 +14,6 @@ export function ChatPanel() {
       {messages.length === 0 ? (
         <header className="border-b border-border px-6 py-8">
           <div className="page-prose w-full">
-            <Badge tone="info" className="mb-3">
-              Beta
-            </Badge>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-fg">
               Ask anything about your documents.
             </h1>
