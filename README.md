@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[Try the demo →](https://docuai.yourdomain.com) · [Architecture](docs/architecture.md) · [API reference](docs/api.md) · [Deploy guide](docs/deploy.md)
+[Try the demo →](https://vc8kk8wwokgwgkccs4s8swcc.65.108.2.94.sslip.io/) · [Architecture](docs/architecture.md) · [API reference](docs/api.md) · [Deploy guide](docs/deploy.md)
 
 </div>
 
