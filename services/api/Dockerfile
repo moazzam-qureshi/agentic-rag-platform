@@ -40,6 +40,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 
+# Pre-fetch the sentence-transformers embedding model into the image so the
+# first chat query doesn't pay a ~90MB HuggingFace download. The cache lives
+# at /root/.cache/huggingface; SentenceTransformer reads from there on init.
+RUN python -c "from sentence_transformers import SentenceTransformer; \
+    SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+
 # Source layout: pyproject + workspace dirs.
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY alembic /app/alembic
