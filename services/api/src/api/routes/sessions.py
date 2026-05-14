@@ -1,13 +1,13 @@
-"""GET /sessions/:id — load a chat session and its messages.
+"""Chat session endpoints — scoped by caller IP.
 
-Used by the frontend to rehydrate a conversation after page reload.
-The session is scoped to the caller's IP — same ownership rule as
-documents and jobs.
+GET /sessions          → list the caller's sessions for the sidebar history
+GET /sessions/:id      → load one session + its messages (rehydration)
+DELETE /sessions/:id   → user removes a conversation
 """
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db.session import get_db
@@ -17,6 +17,55 @@ from shared.guardrails.client_ip import get_client_ip
 logger = structlog.get_logger(__name__)
 
 router = APIRouter()
+
+
+@router.get("/sessions")
+async def list_sessions(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """List the caller's chat sessions, newest first.
+
+    Each entry has the metadata the sidebar needs — id, title,
+    created_at, updated_at, and message_count for a subtle hint.
+    Returns at most 100 (defensive cap; the 24h cleanup keeps the
+    real number much lower).
+    """
+    client_ip = get_client_ip(request)
+
+    # Subquery counting messages per session, joined back so we get them
+    # in one round-trip instead of N+1.
+    msg_count_subq = (
+        select(
+            Message.session_id.label("sid"),
+            func.count(Message.id).label("msg_count"),
+        )
+        .group_by(Message.session_id)
+        .subquery()
+    )
+
+    stmt = (
+        select(ChatSession, func.coalesce(msg_count_subq.c.msg_count, 0))
+        .outerjoin(msg_count_subq, msg_count_subq.c.sid == ChatSession.id)
+        .where(ChatSession.client_ip == client_ip)
+        .order_by(ChatSession.updated_at.desc())
+        .limit(100)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    return {
+        "sessions": [
+            {
+                "id": s.id,
+                "title": s.title,
+                "created_at": s.created_at.isoformat(),
+                "updated_at": s.updated_at.isoformat(),
+                "message_count": int(count),
+            }
+            for s, count in rows
+        ]
+    }
 
 
 @router.get("/sessions/{session_id}")
@@ -69,3 +118,30 @@ async def get_session(
             if m.role in ("user", "assistant")
         ],
     }
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(
+    session_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Hard-delete a session (cascades to its messages via FK).
+
+    404 on cross-IP / unknown — same ownership rule as the GET handlers.
+    """
+    client_ip = get_client_ip(request)
+
+    stmt = select(ChatSession).where(ChatSession.id == session_id)
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+
+    if not session or session.client_ip != client_ip:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    await db.execute(delete(ChatSession).where(ChatSession.id == session_id))
+    await db.flush()
+
+    logger.info("session_deleted", session_id=session_id, client_ip=client_ip)
+
+    return {"session_id": session_id, "deleted": True}

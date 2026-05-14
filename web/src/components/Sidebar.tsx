@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageSquarePlus } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 function GithubMark({ size = 12 }: { size?: number }) {
   return (
@@ -16,15 +17,44 @@ function GithubMark({ size = 12 }: { size?: number }) {
   );
 }
 import { Button } from "@/components/Button";
+import { ConversationList } from "@/components/ConversationList";
 import { DocumentList } from "@/components/DocumentList";
 import { Logo } from "@/components/Logo";
 import { UploadButton } from "@/components/UploadButton";
 import { useChat } from "@/hooks/useChat";
 import { useDocuments } from "@/hooks/useDocuments";
+import { useSessions } from "@/hooks/useSessions";
 
 export function Sidebar() {
   const { docs, loading, refresh, remove } = useDocuments();
-  const { reset } = useChat();
+  const { reset, sessionId, status } = useChat();
+  const {
+    sessions,
+    loading: sessionsLoading,
+    refresh: refreshSessions,
+    remove: removeSession,
+  } = useSessions();
+
+  // Refresh the sidebar's conversation list whenever a chat finishes
+  // streaming (status returns to "idle" after being non-idle), so a brand
+  // new conversation appears immediately and existing titles update.
+  const wasActive = useRef(false);
+  useEffect(() => {
+    if (status !== "idle") {
+      wasActive.current = true;
+      return;
+    }
+    if (wasActive.current) {
+      wasActive.current = false;
+      void refreshSessions();
+    }
+  }, [status, refreshSessions]);
+
+  // Also refresh when the sessionId changes (covers initial rehydration
+  // and the user-clicked "switch conversation" path).
+  useEffect(() => {
+    if (sessionId) void refreshSessions();
+  }, [sessionId, refreshSessions]);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -48,12 +78,23 @@ export function Sidebar() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <SectionHeader label="Your documents" />
-        <DocumentList docs={docs} loading={loading} onDelete={remove} />
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <div className="flex flex-col gap-0.5">
+          <SectionHeader label="Your documents" />
+          <DocumentList docs={docs} loading={loading} onDelete={remove} />
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          <SectionHeader label="Conversations" />
+          <ConversationList
+            sessions={sessions}
+            loading={sessionsLoading}
+            onDelete={removeSession}
+          />
+        </div>
       </div>
 
-      <div className="mt-auto flex flex-col gap-2 px-2 py-2">
+      <div className="flex flex-col gap-2 px-2 py-2">
         <a
           href="https://github.com/moazzam-qureshi/agentic-rag-platform"
           target="_blank"

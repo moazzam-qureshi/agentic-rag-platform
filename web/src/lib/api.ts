@@ -79,6 +79,15 @@ export interface SessionResponse {
   messages: SessionMessage[];
 }
 
+/** One row in the sidebar conversation list. */
+export interface SessionListItem {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
 export type ChatStreamEvent =
   | { event: "session"; data: { session_id: string } }
   | { event: "status"; data: { status: "searching" | "generating" } }
@@ -158,6 +167,21 @@ export async function getSession(sessionId: string): Promise<SessionResponse> {
   });
   if (!res.ok) throw new Error(await safeError(res));
   return res.json();
+}
+
+/** List the caller's chat sessions, newest first. Used by the sidebar. */
+export async function listSessions(): Promise<SessionListItem[]> {
+  const res = await fetch(`${API_BASE}/sessions`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await safeError(res));
+  const json = (await res.json()) as { sessions: SessionListItem[] };
+  return json.sessions;
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(await safeError(res));
 }
 
 /**

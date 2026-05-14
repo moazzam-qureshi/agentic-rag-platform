@@ -42,6 +42,8 @@ interface ChatContextValue {
   error: string | null;
   send: (text: string) => Promise<void>;
   reset: () => void;
+  /** Load a different conversation (used by the sidebar history list). */
+  loadSession: (id: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -167,11 +169,44 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setTraces([]);
     setStatus("idle");
     setError(null);
-  }, []);
+  }, [setSessionId]);
+
+  /** Switch to a different conversation by id. Loads its messages. */
+  const loadSession = useCallback(
+    async (id: string) => {
+      abortRef.current?.abort();
+      setStatus("idle");
+      setError(null);
+      setTraces([]);
+      try {
+        const session = await getSession(id);
+        setSessionId(session.session_id);
+        setMessages(
+          session.messages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+          })),
+        );
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    },
+    [setSessionId],
+  );
 
   return (
     <ChatContext.Provider
-      value={{ sessionId, messages, status, traces, error, send, reset }}
+      value={{
+        sessionId,
+        messages,
+        status,
+        traces,
+        error,
+        send,
+        reset,
+        loadSession,
+      }}
     >
       {children}
     </ChatContext.Provider>
